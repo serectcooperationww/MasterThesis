@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import random
 
-# from tensorflow.keras.models import Sequential
-# from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
@@ -24,7 +22,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
-from LSTMencoder_pytorch import LSTMencoder, SequenceDataset
+from LSTMencoder_pytorch import LSTM, SequenceDataset
 from resampling_method import sample_data
 
 
@@ -134,6 +132,20 @@ def test(test_subsets, model):
 
 def apply_resampling_and_classification(X, y, resampler):
 
+    input_size = 77525  # The number of expected features in the input x
+    hidden_size = 2048  # The number of features in the hidden state h
+    num_layers = 1  # Number of recurrent layers
+    num_classes = 2  # For binary classification
+    learning_rate = 0.001
+
+    if torch.cuda.is_available():
+        torch_device = torch.device("cuda")
+        device_package = torch.cuda
+
+    model = DLModels.SimpleLSTM(input_size, hidden_size, num_layers, num_classes).to(torch_device)
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    criterion_eval = nn.BCEWithLogitsLoss()
+
     clf = RandomForestClassifier(random_state=0)
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
     reports = []
@@ -162,45 +174,13 @@ def apply_resampling_and_classification(X, y, resampler):
 
 
 df = pd.read_csv('data/hospital_billing_2.csv', sep=';')
+df = df.head(1000)
 df_unbalanced = preprocess_data(df)
 df_rolled = roll_sequence(df_unbalanced)
 df_onehotencoded = one_hot_encode_activity(df_rolled)
 
 Encoded_data = SequenceDataset(df_onehotencoded)
-current_activity, label = Encoded_data[:]
-
-
-input_size = 2  # Two features per pair: activity and time_since_last_event
-hidden_size = 128  # Example hidden size
-num_layers = 1  # Number of LSTM layers
-model = LSTMencoder(input_size, hidden_size, num_layers)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-criterion = nn.NLLLoss()  # Assuming a regression task
-
-num_epochs = 10  # Number of training epochs
-for epoch in range(num_epochs):
-    for sequences, labels in dataloader:
-        optimizer.zero_grad()
-        hidden_state = model(sequences)
-        last_hidden_state = hidden_state[-1]
-        loss = criterion(hidden_state, labels)
-        loss.backward()
-        optimizer.step()
-
-    print(f'Epoch {epoch+1}, Loss: {loss.item()}')
-    print(hidden_state)
-
-
-
-#
-
-# labels_unbalanced = df_unbalanced.groupby('Case ID')['label'].first().values
-# lstm_features_unbalanced = LSTM_model(padded_sequences_unbalanced, labels_unbalanced)
-#
-# X = lstm_features_unbalanced
-# y = labels_unbalanced
-#
-# print(np.unique(X))
+X, y = Encoded_data[:]
 
 resampling_techniques = {
         "Random Over-Sampling": RandomOverSampler(random_state=0),
