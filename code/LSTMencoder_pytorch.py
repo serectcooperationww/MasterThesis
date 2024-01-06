@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import Dataset, DataLoader
+import numpy as np
 
 class LSTM(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, num_classes):
@@ -47,11 +48,26 @@ class SequenceDataset(Dataset):
                         value == 0 for value in sequence[i + 2]):
                     break
         self.next_activities = [inner_list[:-1] for inner_list in self.next_activities]
+        self.current_activities = np.array(self.current_activities)
+        self.label = np.array(self.label).reshape((-1,1))
+
 
     def __len__(self):
         return len(self.current_activities)
 
     def __getitem__(self, idx):
-        current_activity = torch.tensor(self.current_activities[idx], dtype=torch.float)
+        # tensor_list= [torch.tensor(l, dtype=torch.float) for l in self.current_activities[idx]]
+        # current_activity = torch.tensor(tensor_list[idx], dtype=torch.float)
+        # current_activity = torch.from_numpy(self.current_activities[idx])
+
+        max_length = max(len(inner_list) for inner_list in self.current_activities)
+        padded_activities = []
+        for inner_list in self.current_activities:
+            padding_length = max_length - len(inner_list)
+            padding = [0] * padding_length  # Create a list of zeros
+            padded_list = inner_list + padding
+            padded_activities.append(padded_list)
+
+        padded_activity_tensor = torch.tensor(padded_activities, dtype=torch.float)
         label = torch.tensor(self.label[idx], dtype=torch.float)
-        return current_activity, label
+        return padded_activity_tensor, label
