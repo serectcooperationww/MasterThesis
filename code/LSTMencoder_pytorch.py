@@ -33,14 +33,16 @@ class SequenceDataset(Dataset):
                 if i < len(sequence) - 2 and all(value == 0 for value in sequence[i + 1]) and all(
                         value == 0 for value in sequence[i + 2]):
                     break
+        self.next_activities = [inner_list[:-1] for inner_list in self.next_activities]
+        self.label = self.label.apply(lambda x: x[0]).values
 
     def __len__(self):
         return len(self.current_activities)
 
     def __getitem__(self, idx):
         current_activity = torch.tensor(self.current_activities[idx], dtype=torch.float)
-        next_activity = torch.tensor(self.next_activities[idx], dtype=torch.float)
-        return current_activity, next_activity
+        label = self.label
+        return current_activity, label
 
 
     # def Encode_data(df):

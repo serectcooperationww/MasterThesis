@@ -167,8 +167,8 @@ df_rolled = roll_sequence(df_unbalanced)
 df_onehotencoded = one_hot_encode_activity(df_rolled)
 
 Encoded_data = SequenceDataset(df_onehotencoded)
-# current_activity, next_activity = Encoded_data[0]
-dataloader = DataLoader(Encoded_data, batch_size=1024, shuffle=True)
+current_activity, label = Encoded_data[:]
+
 
 input_size = 2  # Two features per pair: activity and time_since_last_event
 hidden_size = 128  # Example hidden size
