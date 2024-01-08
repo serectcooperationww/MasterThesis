@@ -34,6 +34,7 @@ class SequenceDataset(Dataset):
     def __init__(self, dataframe):
         self.current_activities = []
         self.next_activities = []
+        self.all_activity = dataframe['activity_time_onehot'].tolist()
         self.label = []
 
         # Process the dataframe to generate activity pairs
@@ -68,6 +69,8 @@ class SequenceDataset(Dataset):
             padded_list = inner_list + padding
             padded_activities.append(padded_list)
 
-        padded_activity_tensor = torch.tensor(padded_activities, dtype=torch.float)
+        padded_current_activity_tensor = torch.tensor(padded_activities, dtype=torch.float)
         label = torch.tensor(self.label[idx], dtype=torch.float)
-        return padded_activity_tensor, label
+
+        all_activity = pad_sequence([torch.tensor(seq) for seq in self.all_activityself.all_activity], batch_first=True)
+        return all_activity, padded_current_activity_tensor, label

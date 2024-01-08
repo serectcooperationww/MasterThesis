@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 import pandas as pd
 import random
+import time
 
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
@@ -132,19 +133,19 @@ def test(test_subsets, model):
 
 def apply_resampling_and_classification(X, y, resampler):
 
-    input_size = 77525  # The number of expected features in the input x
-    hidden_size = 2048  # The number of features in the hidden state h
-    num_layers = 1  # Number of recurrent layers
-    num_classes = 2  # For binary classification
-    learning_rate = 0.001
-
-    if torch.cuda.is_available():
-        torch_device = torch.device("cuda")
-        device_package = torch.cuda
-
-    model = DLModels.SimpleLSTM(input_size, hidden_size, num_layers, num_classes).to(torch_device)
-    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-    criterion_eval = nn.BCEWithLogitsLoss()
+    # input_size = 77525  # The number of expected features in the input x
+    # hidden_size = 2048  # The number of features in the hidden state h
+    # num_layers = 1  # Number of recurrent layers
+    # num_classes = 2  # For binary classification
+    # learning_rate = 0.001
+    #
+    # if torch.cuda.is_available():
+    #     torch_device = torch.device("cuda")
+    #     device_package = torch.cuda
+    #
+    # model = DLModels.SimpleLSTM(input_size, hidden_size, num_layers, num_classes).to(torch_device)
+    # criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    # criterion_eval = nn.BCEWithLogitsLoss()
 
     clf = RandomForestClassifier(random_state=0)
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
@@ -181,6 +182,9 @@ df_onehotencoded = one_hot_encode_activity(df_rolled)
 
 Encoded_data = SequenceDataset(df_onehotencoded)
 X, y = Encoded_data[:]
+
+X = df_onehotencoded['activity_time_onehot'].tolist()
+y = df_onehotencoded['label'].apply(lambda x: x[0]).tolist() #np.array([row[0] for row in df_onehotencoded['label']])
 
 resampling_techniques = {
         "Random Over-Sampling": RandomOverSampler(random_state=0),
