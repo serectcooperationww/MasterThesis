@@ -35,7 +35,7 @@ if __name__ == "__main__":
     df_unbalanced = preprocess_data(df)
     df_rolled = roll_sequence(df_unbalanced)
     df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
-    df_onehotencoded["label"] = df_onehotencoded["label"].apply(lambda x: x[0])
+    df_onehotencoded.loc[:, "label"] = df_onehotencoded["label"].apply(lambda x: x[0])
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
             dataloader_test = DataLoader(Encoded_data_test, batch_size=32, shuffle=True)
 
             # train lstm model
-            input_size = 6  # Number of features in each sequence
+            input_size = 7  # Number of features in each sequence
             hidden_size = 50
             num_classes = 2
 
