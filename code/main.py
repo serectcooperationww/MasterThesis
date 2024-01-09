@@ -43,6 +43,13 @@ if __name__ == "__main__":
     X = df_onehotencoded.drop('label', axis=1)
     y = df_onehotencoded['label']
 
+    torch_device = "cpu"
+    device_package = torch.cpu
+    if torch.cuda.is_available():
+        torch_device = torch.device("cuda")
+        device_package = torch.cuda
+
+
     for name, resampler in resampling_techniques.items():
         print(f"Using resampler: {name}")
         results = []
