@@ -25,13 +25,13 @@ from imblearn.under_sampling import RandomUnderSampler, NearMiss
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
 from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity, flatten_feature
-
+from evaluation_metrics import calculate_evaluation_metrics
 
 if __name__ == "__main__":
     # preprocess dataframe
     data_path = 'data/hospital_billing_2.csv'
     df = pd.read_csv(data_path, sep=';')
-    df = df.head(100)
+    df = df.head(1000)
     df_unbalanced = preprocess_data(df)
     df_rolled = roll_sequence(df_unbalanced)
     df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
@@ -79,7 +79,7 @@ if __name__ == "__main__":
             criterion = nn.NLLLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-            train_model(dataloader, model, criterion, optimizer, num_epochs=1)
+            train_model(dataloader, model, criterion, optimizer, num_epochs=5)
 
             end_time = time.time()
             execution_time = end_time - start_time
@@ -88,39 +88,9 @@ if __name__ == "__main__":
             # evaluate model
             metrics = evaluate_model(dataloader_test, model)
             results.append(metrics)
-            print("1")
+            print("one fold done")
 
-        average_metrics = {metric: np.mean([result[metric]['f1-score'] for result in results]) for metric in
-                           results[0]}
-        print(f"Average metrics for {type(resampler).__name__}: {average_metrics}")
-
-
-
-
-
-
-
-
-    # preprocess dataset
-    Encoded_data = SequenceDataset(df_onehotencoded)
-    X, y, z, k = Encoded_data[:]
-    dataloader = DataLoader(Encoded_data, batch_size=32, shuffle=True)
-
-    # Applying resampling techniques and classification
-    results = {}
-    time_report_all = {}
-    for name, resampler in resampling_techniques.items():
-        results[name], time_report_all[name] = apply_resampling_and_classification(resampler, dataloader)
-
-
-
-    print("1")
-
-
-
-
-
-
+    calculate_evaluation_metrics(results)
 
 
 
