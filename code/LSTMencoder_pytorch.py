@@ -29,17 +29,38 @@ class LSTM(nn.Module):
         self.lstm.flatten_parameters()
 
 
+def train_model(train_loader, model, criterion, optimizer):
+    model.train()
+    for sequences, labels in train_loader:
+        optimizer.zero_grad()
+        outputs = model(sequences)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+def evaluate_model(test_loader, model):
+    model.eval()
+    all_preds = []
+    all_labels = []
+    with torch.no_grad():
+        for sequences, labels in test_loader:
+            outputs = model(sequences)
+            _, predicted = torch.max(outputs.data, 1)
+            all_preds.extend(predicted.tolist())
+            all_labels.extend(labels.tolist())
+    return classification_report(all_labels, all_preds, output_dict=True)
+
 
 class SequenceDataset(Dataset):
     def __init__(self, dataframe):
-        self.all_activity = dataframe['activity_time_onehot'].tolist()
-        self.all_label = dataframe['label'].apply(lambda x: x[0]).tolist()
+        self.all_activity = dataframe['feature'].tolist()
+        self.all_label = dataframe['label'].tolist()
 
         self.current_activities = []
         self.current_label = []
 
         # Process the dataframe to generate activity pairs
-        for x, sequence in enumerate(dataframe['activity_time_onehot']):
+        for x, sequence in enumerate(dataframe['feature']):
             for i in range(len(sequence)):
                 self.current_activities.append(sequence[:i + 1])
                 self.current_label.append(dataframe["label"][x][0])

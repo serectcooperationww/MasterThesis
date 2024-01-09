@@ -35,9 +35,31 @@ if __name__ == "__main__":
     df = df.head(100)
     df_unbalanced = preprocess_data(df)
     df_rolled = roll_sequence(df_unbalanced)
-    df_onehotencoded = one_hot_encode_activity(df_rolled)
+    df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
+    df_onehotencoded["label"] = df_onehotencoded["label"].apply(lambda x: x[0])
 
-    # resample data
+    # resample and train data
+    kf = StratifiedKFold(n_splits=5)
+    results = {type(resampler).__name__: [] for resampler in resampling_techniques}
+    X = df_onehotencoded['feature'].tolist()
+    y = df_onehotencoded['label'].tolist()
+
+    for resampler in resampling_techniques:
+        print(f"Using resampler: {type(resampler).__name__}")
+
+        for train_index, test_index in kf.split(X,y):
+            start_time = time.time()
+
+            # Split data
+            train_data, test_data = df_onehotencoded.iloc[train_index], df_onehotencoded.iloc[test_index]
+
+            # Resample train_data using the current resampler
+            X_resampled, y_resampled = resampler.fit_resample(np.array(train_data['feature'].tolist()),
+                                                              train_data['label'])
+
+            print("1")
+
+
 
 
 
