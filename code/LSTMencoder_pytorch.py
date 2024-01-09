@@ -53,21 +53,32 @@ def evaluate_model(test_loader, model):
 
 class SequenceDataset(Dataset):
     def __init__(self, dataframe):
-        self.all_activity = dataframe['feature'].tolist()
+        self.all_activity = dataframe.drop('label', axis=1).tolist()
         self.all_label = dataframe['label'].tolist()
 
         self.current_activities = []
         self.current_label = []
 
         # Process the dataframe to generate activity pairs
-        for x, sequence in enumerate(dataframe['feature']):
-            for i in range(len(sequence)):
-                self.current_activities.append(sequence[:i + 1])
-                self.current_label.append(dataframe["label"][x][0])
-                # Stop if the next two lists are zero-filled
-                if i < len(sequence) - 2 and all(value == 0 for value in sequence[i + 1]) and all(
-                        value == 0 for value in sequence[i + 2]):
-                    break
+        # for x, sequence in enumerate(dataframe['feature']):
+        #     for i in range(len(sequence)):
+        #         self.current_activities.append(sequence[:i + 1])
+        #         self.current_label.append(dataframe["label"][x])
+        #         # Stop if the next two lists are zero-filled
+        #         if i < len(sequence) - 2 and all(value == 0 for value in sequence[i + 1]) and all(
+        #                 value == 0 for value in sequence[i + 2]):
+        #             break
+        for x in range(len(dataframe)):
+            # Iterate through each feature column for the current row
+            for feature_col in [col for col in dataframe.columns if 'activity' in col]:
+                sequence = dataframe.at[x, feature_col]
+                for i in range(len(sequence)):
+                    self.current_activities.append(sequence[:i + 1])
+                    self.current_label.append(dataframe.at[x, "label"])
+                    # Stop if the next two lists are zero-filled
+                    if i < len(sequence) - 2 and all(value == 0 for value in sequence[i + 1]) and all(
+                            value == 0 for value in sequence[i + 2]):
+                        break
 
         self.current_activities = np.array(self.current_activities, dtype=object).reshape(-1)
         self.current_label = np.array(self.current_label).reshape((-1))
@@ -89,6 +100,6 @@ class SequenceDataset(Dataset):
         current_labels_tensor = torch.tensor(self.current_label[idx], dtype=torch.long)
 
         all_activity_tensor = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in self.all_activity], batch_first=True)[idx]
-        labels_tensor = torch.tensor(self.all_label[idx], dtype=torch.long)
+        all_labels_tensor = torch.tensor(self.all_label[idx], dtype=torch.long)
 
-        return all_activity_tensor, labels_tensor, padded_current_activity_tensor, current_labels_tensor
+        return all_activity_tensor, all_labels_tensor, padded_current_activity_tensor, current_labels_tensor

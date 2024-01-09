@@ -25,7 +25,7 @@ from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset
 from resampling_and_classification import resampling_techniques
-from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity
+from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity, flatten_feature
 
 
 if __name__ == "__main__":
@@ -37,27 +37,31 @@ if __name__ == "__main__":
     df_rolled = roll_sequence(df_unbalanced)
     df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
     df_onehotencoded["label"] = df_onehotencoded["label"].apply(lambda x: x[0])
+    df_prepared = flatten_feature(df_onehotencoded)
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5)
-    results = {type(resampler).__name__: [] for resampler in resampling_techniques}
-    X = df_onehotencoded['feature'].tolist()
-    y = df_onehotencoded['label'].tolist()
+    results = {}
+    X = df_prepared.drop('label', axis=1)
+    y = df_prepared['label']
 
-    for resampler in resampling_techniques:
-        print(f"Using resampler: {type(resampler).__name__}")
+    for name, resampler in resampling_techniques.items():
+        print(f"Using resampler: {name}")
 
         for train_index, test_index in kf.split(X,y):
             start_time = time.time()
 
-            # Split data
-            train_data, test_data = df_onehotencoded.iloc[train_index], df_onehotencoded.iloc[test_index]
+            X_train, y_train = X.iloc[train_index], y.iloc[train_index]
+            X_test, y_test = X.iloc[test_index], y.iloc[test_index]
 
-            # Resample train_data using the current resampler
-            X_resampled, y_resampled = resampler.fit_resample(np.array(train_data['feature'].tolist()),
-                                                              train_data['label'])
+            X_resampled, y_resampled = resampler.fit_resample(X_train, y_train)
+            df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
+
+            Encoded_data = SequenceDataset(df_resampled)
+            all_activity_tensor, all_labels_tensor, padded_current_activity_tensor, current_labels_tensor = Encoded_data[:]
 
             print("1")
+
 
 
 
