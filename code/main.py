@@ -23,7 +23,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
-from LSTMencoder_pytorch import LSTM, SequenceDataset
+from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model
 from resampling_and_classification import resampling_techniques
 from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity, flatten_feature
 
@@ -37,13 +37,12 @@ if __name__ == "__main__":
     df_rolled = roll_sequence(df_unbalanced)
     df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
     df_onehotencoded["label"] = df_onehotencoded["label"].apply(lambda x: x[0])
-    df_prepared = flatten_feature(df_onehotencoded)
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5)
     results = {}
-    X = df_prepared.drop('label', axis=1)
-    y = df_prepared['label']
+    X = df_onehotencoded.drop('label', axis=1)
+    y = df_onehotencoded['label']
 
     for name, resampler in resampling_techniques.items():
         print(f"Using resampler: {name}")
@@ -58,7 +57,21 @@ if __name__ == "__main__":
             df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
 
             Encoded_data = SequenceDataset(df_resampled)
-            all_activity_tensor, all_labels_tensor, padded_current_activity_tensor, current_labels_tensor = Encoded_data[:]
+            padded_current_activity_tensor, current_labels_tensor = Encoded_data[:]
+            dataloader = DataLoader(Encoded_data, batch_size=32, shuffle=True)
+
+            input_size = 6  # Number of features in each sequence
+            hidden_size = 50
+            num_classes = 2
+
+            model = LSTM(input_size, hidden_size, num_classes)
+            criterion = nn.NLLLoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+            train_model(dataloader, model, criterion, optimizer, num_epochs=10)
+
+
+
 
             print("1")
 

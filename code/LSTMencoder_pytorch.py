@@ -14,11 +14,10 @@ class LSTM(nn.Module):
         self.log_softmax = nn.LogSoftmax(dim=1)  # Add LogSoftmax layer
 
     def forward(self, x):
-        print(x.shape)
-        print(x)
+        # print(x.shape)
+        # print(x)
         h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
         c0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
-        #print(dtype(x))
         out, _ = self.lstm(x, (h0, c0))
         out = out[:, -1, :]
         out = self.fc(out)
@@ -29,14 +28,22 @@ class LSTM(nn.Module):
         self.lstm.flatten_parameters()
 
 
-def train_model(train_loader, model, criterion, optimizer):
+def train_model(train_loader, model, criterion, optimizer, num_epochs=10):
     model.train()
-    for sequences, labels in train_loader:
-        optimizer.zero_grad()
-        outputs = model(sequences)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+    for epoch in range(num_epochs):
+        total_loss = 0
+        for sequences, labels in train_loader:
+            optimizer.zero_grad()
+            outputs = model(sequences)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        avg_loss = total_loss / len(train_loader)
+        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.4f}")
+
+
+
 
 def evaluate_model(test_loader, model):
     model.eval()
@@ -53,32 +60,21 @@ def evaluate_model(test_loader, model):
 
 class SequenceDataset(Dataset):
     def __init__(self, dataframe):
-        self.all_activity = dataframe.drop('label', axis=1).tolist()
-        self.all_label = dataframe['label'].tolist()
+        self.all_activity = dataframe['feature'].values.tolist()
+        self.all_label = dataframe['label'].values.tolist()
 
         self.current_activities = []
         self.current_label = []
 
         # Process the dataframe to generate activity pairs
-        # for x, sequence in enumerate(dataframe['feature']):
-        #     for i in range(len(sequence)):
-        #         self.current_activities.append(sequence[:i + 1])
-        #         self.current_label.append(dataframe["label"][x])
-        #         # Stop if the next two lists are zero-filled
-        #         if i < len(sequence) - 2 and all(value == 0 for value in sequence[i + 1]) and all(
-        #                 value == 0 for value in sequence[i + 2]):
-        #             break
-        for x in range(len(dataframe)):
-            # Iterate through each feature column for the current row
-            for feature_col in [col for col in dataframe.columns if 'activity' in col]:
-                sequence = dataframe.at[x, feature_col]
-                for i in range(len(sequence)):
-                    self.current_activities.append(sequence[:i + 1])
-                    self.current_label.append(dataframe.at[x, "label"])
-                    # Stop if the next two lists are zero-filled
-                    if i < len(sequence) - 2 and all(value == 0 for value in sequence[i + 1]) and all(
-                            value == 0 for value in sequence[i + 2]):
-                        break
+        for x, sequence in enumerate(dataframe['feature']):
+            for i in range(len(sequence)):
+                self.current_activities.append(sequence[:i + 1])
+                self.current_label.append(dataframe["label"][x])
+                # Stop if the next two lists are zero-filled
+                if i < len(sequence) - 2 and all(value == 0 for value in sequence[i + 1]) and all(
+                        value == 0 for value in sequence[i + 2]):
+                    break
 
         self.current_activities = np.array(self.current_activities, dtype=object).reshape(-1)
         self.current_label = np.array(self.current_label).reshape((-1))
@@ -87,6 +83,7 @@ class SequenceDataset(Dataset):
         return len(self.all_activity)
 
     def __getitem__(self, idx):
+        # pad current activity
         max_length = max(len(inner_list) for inner_list in self.current_activities)
         padded_activities = []
         for inner_list in self.current_activities:
@@ -102,4 +99,4 @@ class SequenceDataset(Dataset):
         all_activity_tensor = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in self.all_activity], batch_first=True)[idx]
         all_labels_tensor = torch.tensor(self.all_label[idx], dtype=torch.long)
 
-        return all_activity_tensor, all_labels_tensor, padded_current_activity_tensor, current_labels_tensor
+        return padded_current_activity_tensor, current_labels_tensor
