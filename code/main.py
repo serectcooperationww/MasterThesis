@@ -82,7 +82,7 @@ if __name__ == "__main__":
             hidden_size = 50
             num_classes = 2
 
-            model = LSTM(input_size, hidden_size, num_classes)
+            model = LSTM(input_size, hidden_size, num_classes).to(torch_device)
             criterion = nn.NLLLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
