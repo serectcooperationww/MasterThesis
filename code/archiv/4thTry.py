@@ -75,7 +75,7 @@ def apply_resampling_and_classification(X, y, resampler):
 
     return reports
 
-df = pd.read_csv('data/hospital_billing_2.csv', sep=';')
+df = pd.read_csv('../data/hospital_billing_2.csv', sep=';')
 df_preprocessed = preprocess_data(df)
 
 padded_sequences = encode_data(df_preprocessed)

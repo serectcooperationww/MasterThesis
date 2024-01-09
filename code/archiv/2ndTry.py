@@ -139,7 +139,7 @@ def test(test_subsets, model):
     print(average_report)
 
 
-df = pd.read_csv('data/hospital_billing_2.csv', sep=';')
+df = pd.read_csv('../data/hospital_billing_2.csv', sep=';')
 df_unbalanced = preprocess_data(df)
 padded_sequences_unbalanced = Encode_data(df_unbalanced)
 labels_unbalanced = df_unbalanced.groupby('Case ID')['label'].first().values

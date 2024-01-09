@@ -207,7 +207,7 @@ fold1_t = timeseqs[:elems_per_fold]
 fold1_t2 = timeseqs2[:elems_per_fold]
 fold1_t3 = timeseqs3[:elems_per_fold]
 fold1_t4 = timeseqs4[:elems_per_fold]
-with open('output_files/folds/fold1.csv', 'wb') as csvfile:
+with open('../output_files/folds/fold1.csv', 'wb') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
     for row, timeseq in izip(fold1, fold1_t):
         spamwriter.writerow([unicode(s).encode("utf-8") +'#{}'.format(t) for s, t in izip(row, timeseq)])

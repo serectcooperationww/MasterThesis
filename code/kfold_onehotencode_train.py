@@ -131,21 +131,29 @@ def test(test_subsets, model):
 
 
 
-def apply_resampling_and_classification(X, y, resampler):
+def apply_resampling_and_classification(resampler, dataloader): #X, y,
 
-    # input_size = 77525  # The number of expected features in the input x
-    # hidden_size = 2048  # The number of features in the hidden state h
-    # num_layers = 1  # Number of recurrent layers
-    # num_classes = 2  # For binary classification
-    # learning_rate = 0.001
-    #
-    # if torch.cuda.is_available():
-    #     torch_device = torch.device("cuda")
-    #     device_package = torch.cuda
-    #
-    # model = DLModels.SimpleLSTM(input_size, hidden_size, num_layers, num_classes).to(torch_device)
-    # criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-    # criterion_eval = nn.BCEWithLogitsLoss()
+    input_size = 4  # Number of features in each sequence
+    hidden_size = 50
+    num_classes = 2
+
+    model = LSTM(input_size, hidden_size, num_classes)
+    criterion = nn.NLLLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+    num_epochs = 10  # Adjust as needed
+    for epoch in range(num_epochs):
+        for sequences, labels in dataloader:
+            # Forward pass
+            outputs = model(sequences)
+            loss = criterion(outputs, labels)
+
+            # Backward and optimize
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
 
     clf = RandomForestClassifier(random_state=0)
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
@@ -175,16 +183,15 @@ def apply_resampling_and_classification(X, y, resampler):
 
 
 df = pd.read_csv('data/hospital_billing_2.csv', sep=';')
-df = df.head(1000)
+df = df.head(100)
 df_unbalanced = preprocess_data(df)
 df_rolled = roll_sequence(df_unbalanced)
 df_onehotencoded = one_hot_encode_activity(df_rolled)
 
 Encoded_data = SequenceDataset(df_onehotencoded)
-X, y = Encoded_data[:]
+X, y, z, k = Encoded_data[:]
+dataloader = DataLoader(Encoded_data, batch_size=32, shuffle=True)
 
-X = df_onehotencoded['activity_time_onehot'].tolist()
-y = df_onehotencoded['label'].apply(lambda x: x[0]).tolist() #np.array([row[0] for row in df_onehotencoded['label']])
 
 resampling_techniques = {
         "Random Over-Sampling": RandomOverSampler(random_state=0),
@@ -199,7 +206,7 @@ resampling_techniques = {
 results = {}
 time_report_all = {}
 for name, resampler in resampling_techniques.items():
-    results[name], time_report_all[name] = apply_resampling_and_classification(X, y, resampler)
+    results[name], time_report_all[name] = apply_resampling_and_classification(resampler, dataloader) #X, y,
 
 # Initialize a dictionary to store the averaged results
 averaged_results = {}
