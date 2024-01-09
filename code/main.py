@@ -46,20 +46,32 @@ if __name__ == "__main__":
 
     for name, resampler in resampling_techniques.items():
         print(f"Using resampler: {name}")
+        results = []
+        time_report = []
 
         for train_index, test_index in kf.split(X,y):
+
+            # resample data
             start_time = time.time()
 
             X_train, y_train = X.iloc[train_index], y.iloc[train_index]
             X_test, y_test = X.iloc[test_index], y.iloc[test_index]
 
-            X_resampled, y_resampled = resampler.fit_resample(X_train, y_train)
-            df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
+            if resampler is not None:
+                X_resampled, y_resampled = resampler.fit_resample(X_train, y_train)
+            else:
+                X_resampled, y_resampled = X_train, y_train
 
+            # prepare dataloader
+            df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
             Encoded_data = SequenceDataset(df_resampled)
-            padded_current_activity_tensor, current_labels_tensor = Encoded_data[:]
             dataloader = DataLoader(Encoded_data, batch_size=32, shuffle=True)
 
+            df_test = pd.concat([X_test, y_test], axis=1)
+            Encoded_data_test = SequenceDataset(df_test)
+            dataloader_test = DataLoader(Encoded_data_test, batch_size=32, shuffle=True)
+
+            # train lstm model
             input_size = 6  # Number of features in each sequence
             hidden_size = 50
             num_classes = 2
@@ -70,6 +82,12 @@ if __name__ == "__main__":
 
             train_model(dataloader, model, criterion, optimizer, num_epochs=10)
 
+            end_time = time.time()
+            execution_time = end_time - start_time
+            time_report.append(Execution_time)
+
+            metrics = evaluate_model(test_loader, model)
+            results.append(metrics)
 
 
 

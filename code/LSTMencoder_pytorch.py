@@ -44,7 +44,6 @@ def train_model(train_loader, model, criterion, optimizer, num_epochs=10):
 
 
 
-
 def evaluate_model(test_loader, model):
     model.eval()
     all_preds = []
