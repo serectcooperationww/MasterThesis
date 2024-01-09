@@ -4,6 +4,7 @@ from torch.nn import functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
 import numpy as np
+from sklearn.metrics import classification_report
 
 class LSTM(nn.Module):
     def __init__(self, input_size, hidden_size, num_classes):

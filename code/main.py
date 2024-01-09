@@ -13,7 +13,6 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
-from sklearn.metrics import classification_report
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
@@ -23,7 +22,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
-from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model
+from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
 from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity, flatten_feature
 
@@ -80,18 +79,22 @@ if __name__ == "__main__":
             criterion = nn.NLLLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-            train_model(dataloader, model, criterion, optimizer, num_epochs=10)
+            train_model(dataloader, model, criterion, optimizer, num_epochs=1)
 
             end_time = time.time()
             execution_time = end_time - start_time
-            time_report.append(Execution_time)
+            time_report.append(execution_time)
 
-            metrics = evaluate_model(test_loader, model)
+            # evaluate model
+            metrics = evaluate_model(dataloader_test, model)
             results.append(metrics)
-
-
-
             print("1")
+
+        average_metrics = {metric: np.mean([result[metric]['f1-score'] for result in results]) for metric in
+                           results[0]}
+        print(f"Average metrics for {type(resampler).__name__}: {average_metrics}")
+
+
 
 
 
