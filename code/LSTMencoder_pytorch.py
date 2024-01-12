@@ -27,12 +27,12 @@ class LSTM(nn.Module):
         self.lstm.flatten_parameters()
 
 
-def train_model(train_loader, model, criterion, optimizer, num_epochs=10):
+def train_model(train_loader, model, criterion, optimizer, torch_device, num_epochs=10):
     model.train()
     for epoch in range(num_epochs):
         total_loss = 0
         for sequences, labels in train_loader:
-            if devide != "cpu":
+            if torch_device != "cpu":
                 sequences, labels = sequences.to(torch_device), labels.to(torch_device)
             optimizer.zero_grad()
             outputs = model(sequences)

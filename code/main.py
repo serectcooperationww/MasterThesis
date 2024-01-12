@@ -73,11 +73,11 @@ if __name__ == "__main__":
             # prepare dataloader
             df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
             Encoded_data = SequenceDataset(df_resampled)
-            dataloader = DataLoader(Encoded_data, batch_size=32, shuffle=True)
+            dataloader = DataLoader(Encoded_data, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
 
             df_test = pd.concat([X_test, y_test], axis=1)
             Encoded_data_test = SequenceDataset(df_test)
-            dataloader_test = DataLoader(Encoded_data_test, batch_size=32, shuffle=True)
+            dataloader_test = DataLoader(Encoded_data_test, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
 
             print("Dataloader prepared")
 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
             criterion = nn.NLLLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-            train_model(dataloader, model, criterion, optimizer, num_epochs=1)
+            train_model(dataloader, model, criterion, optimizer, torch_device, num_epochs=1)
 
             end_time = time.time()
             execution_time = end_time - start_time
