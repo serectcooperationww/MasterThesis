@@ -35,6 +35,7 @@ if __name__ == "__main__":
     df_rolled = roll_sequence(df_unbalanced)
     df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
     df_onehotencoded.loc[:, 'label'] = [x[0] for x in df_onehotencoded['label']]
+    print("Dataframe preprocessed. ")
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
@@ -67,7 +68,7 @@ if __name__ == "__main__":
             else:
                 X_resampled, y_resampled = X_train, y_train
 
-            print("Resampling done with ", resampler)
+            print("Resampling done with", name)
 
             # prepare dataloader
             df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
