@@ -24,22 +24,22 @@ from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
-from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity, flatten_feature
+from Preprocess_dataframe import preprocess_data_hospital, preprocess_data_BPIC15, roll_sequence, one_hot_encode_activity, flatten_feature
 from evaluation_metrics import calculate_evaluation_metrics
 
 if __name__ == "__main__":
     # preprocess dataframe
-    data_path = 'data/hospital_billing_2.csv'
+    data_path = 'data/BPIC17_O_Refused.csv'
     df = pd.read_csv(data_path, sep=';')
-    df = df.head(1000)
-    df_unbalanced = preprocess_data(df)
+    df_unbalanced = preprocess_data_BPIC15(df)
     df_rolled = roll_sequence(df_unbalanced)
     df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
-    df_onehotencoded.loc[:, "label"] = df_onehotencoded["label"].apply(lambda x: x[0])
+    df_onehotencoded.loc[:, 'label'] = [x[0] for x in df_onehotencoded['label']]
 
     # resample and train data
-    kf = StratifiedKFold(n_splits=5)
+    kf = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
     results = {}
+    time_report_all = {}
     X = df_onehotencoded.drop('label', axis=1)
     y = df_onehotencoded['label']
 
@@ -49,10 +49,9 @@ if __name__ == "__main__":
         torch_device = torch.device("cuda")
         device_package = torch.cuda
 
-
     for name, resampler in resampling_techniques.items():
         print(f"Using resampler: {name}")
-        results = []
+        reports = []
         time_report = []
 
         for train_index, test_index in kf.split(X,y):
@@ -78,7 +77,8 @@ if __name__ == "__main__":
             dataloader_test = DataLoader(Encoded_data_test, batch_size=32, shuffle=True)
 
             # train lstm model
-            input_size = 7  # Number of features in each sequence
+            sequences, labels = next(iter(dataloader))
+            input_size = sequences.shape[2]
             hidden_size = 50
             num_classes = 2
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
             criterion = nn.NLLLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-            train_model(dataloader, model, criterion, optimizer, num_epochs=5)
+            train_model(dataloader, model, criterion, optimizer, num_epochs=1)
 
             end_time = time.time()
             execution_time = end_time - start_time
@@ -94,10 +94,12 @@ if __name__ == "__main__":
 
             # evaluate model
             metrics = evaluate_model(dataloader_test, model)
-            results.append(metrics)
-            print("one fold done")
+            reports.append(metrics)
 
-    calculate_evaluation_metrics(results)
+        results[name], time_report_all[name] = reports, time_report
+
+    calculate_evaluation_metrics(results, time_report_all)
+    print(results)
 
 
 

@@ -11,11 +11,11 @@ from LSTMencoder_pytorch import LSTM, SequenceDataset
 resampling_techniques = {
         "Random Over-Sampling": RandomOverSampler(random_state=0),
         "Random Under-Sampling": RandomUnderSampler(random_state=0),
-        "SMOTE": SMOTE(random_state=0),
-        "ADASYN": ADASYN(random_state=0),
-        "NearMiss": NearMiss(version=1),
         "No Filter": None
     }
+# "SMOTE": SMOTE(random_state=0),
+# "ADASYN": ADASYN(random_state=0),
+# "NearMiss": NearMiss(version=1),
 
 def apply_resampling_and_classification(resampler, dataloader): #X, y,
 

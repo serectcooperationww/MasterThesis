@@ -15,8 +15,6 @@ class LSTM(nn.Module):
         self.log_softmax = nn.LogSoftmax(dim=1)  # Add LogSoftmax layer
 
     def forward(self, x):
-        # print(x.shape)
-        # print(x)
         h0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
         c0 = torch.zeros(1, x.size(0), self.hidden_size).to(x.device)
         out, _ = self.lstm(x, (h0, c0))

@@ -30,7 +30,7 @@ from resampling_and_classification import resampling_techniques
 
 
 
-def preprocess_data(df):
+def preprocess_data_hospital(df):
     df['Complete Timestamp'] = pd.to_datetime(df['Complete Timestamp'])
     df['label'] = df['label'].map({'regular': 0, 'deviant': 1})
     df_sorted = df.sort_values(by=['Case ID', 'Complete Timestamp'])
@@ -40,6 +40,17 @@ def preprocess_data(df):
     df_sorted['timesincelastevent'] = scaler.fit_transform(df_sorted[['timesincelastevent']])
     print(df_sorted)
     return(df_sorted)
+
+def preprocess_data_BPIC15(df):
+    df['time:timestamp'] = pd.to_datetime(df['time:timestamp'])
+    df['label'] = df['label'].map({'regular': 0, 'deviant': 1})
+    df_sorted = df.sort_values(by=['Case ID', 'time:timestamp'])
+    df_sorted['Activity'] = pd.factorize(df_sorted['Activity'])[0]
+
+    scaler = MinMaxScaler()
+    df_sorted['timesincelastevent'] = scaler.fit_transform(df_sorted[['timesincelastevent']])
+    print(df_sorted)
+    return (df_sorted)
 
 def roll_sequence(data, case_column="Case ID"):
     trace = None
