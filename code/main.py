@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import random
 import time
+import logging
+from datetime import datetime
 
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
@@ -28,14 +30,22 @@ from Preprocess_dataframe import preprocess_data_hospital, preprocess_data_BPIC1
 from evaluation_metrics import calculate_evaluation_metrics
 
 if __name__ == "__main__":
+    # Configure logging
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s %(levelname)s:%(message)s')
+
     # preprocess dataframe
     data_path = 'data/sepsis_cases_2.csv'
     df = pd.read_csv(data_path, sep=';')
+    df = df.head(200)
     df_unbalanced = preprocess_data_BPIC15(df)
     df_rolled = roll_sequence(df_unbalanced)
     df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
     df_onehotencoded.loc[:, 'label'] = [x[0] for x in df_onehotencoded['label']]
-    print("Dataframe preprocessed. ")
+
+    logging.info(f"Dataframe preprocessed. Number of Case: {df_onehotencoded.shape[0]}")
+    logging.info(f"Length of each feature: {len(df_onehotencoded.feature[0][0])}")
+    logging.info(f"longest trace: {len(df_onehotencoded.feature[0])}")
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
@@ -51,7 +61,7 @@ if __name__ == "__main__":
         device_package = torch.cuda
 
     for name, resampler in resampling_techniques.items():
-        print(f"Using resampler: {name}")
+        logging.info(f"------ Using resampler: {name} ------")
         reports = []
         time_report = []
 
@@ -68,7 +78,7 @@ if __name__ == "__main__":
             else:
                 X_resampled, y_resampled = X_train, y_train
 
-            print("Resampling done with", name)
+            logging.info(f"Resampling done with {name}")
 
             # prepare dataloader
             df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
@@ -79,7 +89,7 @@ if __name__ == "__main__":
             Encoded_data_test = SequenceDataset(df_test)
             dataloader_test = DataLoader(Encoded_data_test, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
 
-            print("Dataloader prepared")
+            logging.info("Dataloader prepared")
 
             # train lstm model
             sequences, labels = next(iter(dataloader))
@@ -97,12 +107,12 @@ if __name__ == "__main__":
             execution_time = end_time - start_time
             time_report.append(execution_time)
 
-            print("Training done")
+            logging.info("Training done")
 
             # evaluate model
             metrics = evaluate_model(dataloader_test, model)
             reports.append(metrics)
-            print("Evaluation done")
+            logging.info("Evaluation done")
 
         results[name], time_report_all[name] = reports, time_report
 
