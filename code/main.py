@@ -29,7 +29,7 @@ from evaluation_metrics import calculate_evaluation_metrics
 
 if __name__ == "__main__":
     # preprocess dataframe
-    data_path = 'data/BPIC17_O_Refused.csv'
+    data_path = 'data/sepsis_cases_2.csv'
     df = pd.read_csv(data_path, sep=';')
     df_unbalanced = preprocess_data_BPIC15(df)
     df_rolled = roll_sequence(df_unbalanced)
@@ -67,6 +67,8 @@ if __name__ == "__main__":
             else:
                 X_resampled, y_resampled = X_train, y_train
 
+            print("Resampling done with ", resampler)
+
             # prepare dataloader
             df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
             Encoded_data = SequenceDataset(df_resampled)
@@ -75,6 +77,8 @@ if __name__ == "__main__":
             df_test = pd.concat([X_test, y_test], axis=1)
             Encoded_data_test = SequenceDataset(df_test)
             dataloader_test = DataLoader(Encoded_data_test, batch_size=32, shuffle=True)
+
+            print("Dataloader prepared")
 
             # train lstm model
             sequences, labels = next(iter(dataloader))
@@ -92,9 +96,12 @@ if __name__ == "__main__":
             execution_time = end_time - start_time
             time_report.append(execution_time)
 
+            print("Training done")
+
             # evaluate model
             metrics = evaluate_model(dataloader_test, model)
             reports.append(metrics)
+            print("Evaluation done")
 
         results[name], time_report_all[name] = reports, time_report
 
