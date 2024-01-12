@@ -37,7 +37,6 @@ if __name__ == "__main__":
     # preprocess dataframe
     data_path = 'data/sepsis_cases_2.csv'
     df = pd.read_csv(data_path, sep=';')
-    df = df.head(200)
     df_unbalanced = preprocess_data_BPIC15(df)
     df_rolled = roll_sequence(df_unbalanced)
     df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
@@ -101,7 +100,7 @@ if __name__ == "__main__":
             criterion = nn.NLLLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-            train_model(dataloader, model, criterion, optimizer, torch_device, num_epochs=1)
+            train_model(dataloader, model, criterion, optimizer, torch_device, num_epochs=5)
 
             end_time = time.time()
             execution_time = end_time - start_time
