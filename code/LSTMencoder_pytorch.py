@@ -32,6 +32,8 @@ def train_model(train_loader, model, criterion, optimizer, num_epochs=10):
     for epoch in range(num_epochs):
         total_loss = 0
         for sequences, labels in train_loader:
+            if devide != "cpu":
+                sequences, labels = sequences.to(torch_device), labels.to(torch_device)
             optimizer.zero_grad()
             outputs = model(sequences)
             loss = criterion(outputs, labels)
