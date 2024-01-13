@@ -81,3 +81,13 @@ def flatten_feature(df):
     expanded_features = expanded_features.rename(columns=lambda x: 'activity_' + str(x))
     new_df = pd.concat([df[['label']], expanded_features], axis=1)
     return new_df
+
+def create_windows(sequences, labels, window_size):
+    X = []
+    y = []
+    for sequence, label in zip(sequences, labels):
+        for i in range(len(sequence) - window_size + 1):
+            window = sequence[i:i+window_size]
+            X.append(window)
+            y.append(label)
+    return X, y

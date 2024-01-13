@@ -26,7 +26,7 @@ from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
-from Preprocess_dataframe import preprocess_data_hospital, preprocess_data_BPIC15, roll_sequence, one_hot_encode_activity, flatten_feature
+from Preprocess_dataframe import preprocess_data_hospital, preprocess_data_BPIC15, roll_sequence, one_hot_encode_activity, flatten_feature, create_windows
 from evaluation_metrics import calculate_evaluation_metrics
 
 
@@ -80,40 +80,28 @@ if __name__ == "__main__":
 
             logging.info(f"Resampling done with {name}")
 
-            # prepare dataloader
-            df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
-            Encoded_data = SequenceDataset(df_resampled)
-            a, b = Encoded_data[:]
-            dataloader = DataLoader(Encoded_data, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+            # prepare window
+            train_df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
+            test_df = pd.concat([X_test, y_test], axis=1)
 
-            df_test = pd.concat([X_test, y_test], axis=1)
-            Encoded_data_test = SequenceDataset(df_test)
-            dataloader_test = DataLoader(Encoded_data_test, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+            window_size = 3
+            X_train_window, y_train_window = create_windows(train_df_resampled['feature'], train_df_resampled['label'], window_size)
+            X_test_window, y_test_window = create_windows(test_df['feature'], test_df['label'], window_size)
 
-            logging.info("Dataloader prepared")
+            X_train_window_flatten = np.array([np.array(window).flatten() for window in X_train_window])
+            X_test_window_flatten = np.array([np.array(window).flatten() for window in X_test_window])
 
-            # train lstm model
-            sequences, labels = next(iter(dataloader))
-            input_size = sequences.shape[2]
-            hidden_size = 50
-            num_classes = 2
-
-            model = LSTM(input_size, hidden_size, num_classes).to(torch_device)
-            criterion = nn.NLLLoss()
-            optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-            train_model(dataloader, model, criterion, optimizer, torch_device, num_epochs=5)
+            # train model
+            clf = RandomForestClassifier(n_estimators=100, random_state=42)
+            clf.fit(X_train_window_flatten, y_train_window)
 
             end_time = time.time()
             execution_time = end_time - start_time
             time_report.append(execution_time)
-
             logging.info("Training done")
 
-            # evaluate model
-            metrics = evaluate_model(dataloader_test, model)
-            reports.append(metrics)
-            logging.info("Evaluation done")
+            y_pred_window = clf.predict(X_test_window_flatten)
+            reports.append(classification_report(y_test_window, y_pred_window, output_dict=True))
 
         results[name], time_report_all[name] = reports, time_report
 
