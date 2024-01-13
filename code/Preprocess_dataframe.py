@@ -76,11 +76,11 @@ def one_hot_encode_activity(df):
 
     return df
 
-def flatten_feature(df):
-    expanded_features = df['feature'].apply(pd.Series)
-    expanded_features = expanded_features.rename(columns=lambda x: 'activity_' + str(x))
-    new_df = pd.concat([df[['label']], expanded_features], axis=1)
-    return new_df
+def flatten_feature(data):
+    flattened_data = []
+    for sequence in data:
+        flattened_data.append([feature for sublist in sequence for feature in sublist])
+    return flattened_data
 
 def create_windows(sequences, labels, window_size):
     X = []
@@ -91,3 +91,19 @@ def create_windows(sequences, labels, window_size):
             X.append(window)
             y.append(label)
     return X, y
+
+def reshape_case(df):
+    # Creating column names
+    col_names = []
+    for i in range(len(df)):
+        col_names.append(f'timesincelastevent_{i+1}')
+        col_names.extend([f'ACT_{i+1}_{col}' for col in df.columns[2:]])
+
+    # Reshape the dataframe
+    reshaped_values = []
+    for _, row in df.iterrows():
+        reshaped_values.extend(row[1:].tolist())  # Append activity columns and timesincelastevent for each event
+
+    reshaped_df = pd.DataFrame([reshaped_values], columns=col_names)
+
+    return reshaped_df
