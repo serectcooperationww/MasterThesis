@@ -10,15 +10,10 @@ import time
 
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.preprocessing import LabelEncoder, StandardScaler, MultiLabelBinarizer, OneHotEncoder, MinMaxScaler
 from sklearn.metrics import classification_report
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.model_selection import StratifiedKFold
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
-from sklearn.preprocessing import MultiLabelBinarizer
 
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 from imblearn.under_sampling import RandomUnderSampler, NearMiss
@@ -51,6 +46,25 @@ def preprocess_data_BPIC15(df):
     df_sorted['timesincelastevent'] = scaler.fit_transform(df_sorted[['timesincelastevent']])
     print(df_sorted)
     return (df_sorted)
+
+def preprocess_data(df, time_column):
+    df['label'] = df['label'].map({'regular': 0, 'deviant': 1})
+
+    ohe = OneHotEncoder(sparse=False)
+    activities_encoded = ohe.fit_transform(df[['Activity']])
+    activities_df = pd.DataFrame(activities_encoded, columns=[f'ACT_{col.split("_")[-1]}' for col in ohe.get_feature_names_out(['Activity'])])
+
+    encoded_df = pd.concat([df[['Case ID', 'timesincelastevent']], activities_df], axis=1)
+    scaler = MinMaxScaler()
+    encoded_df['timesincelastevent'] = scaler.fit_transform(encoded_df[['timesincelastevent']])
+
+    # Sorting the data by Case ID and timestamp to ensure correct sequence
+    encoded_df = encoded_df.join(df[time_column])
+    encoded_df.sort_values(by=['Case ID', time_column], inplace=True)
+    encoded_df.drop(columns=[time_column], inplace=True)
+
+    return encoded_df
+
 
 def roll_sequence(data, case_column="Case ID"):
     trace = None
@@ -107,3 +121,7 @@ def reshape_case(df):
     reshaped_df = pd.DataFrame([reshaped_values], columns=col_names)
 
     return reshaped_df
+
+def prefix_selection(df, n):
+    filtered_df = df.groupby("Case ID").filter(lambda x: len(x) >= n)
+    return filtered_df.groupby("Case ID").apply(lambda x: x.head(n)).reset_index(drop=True)

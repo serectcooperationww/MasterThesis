@@ -27,55 +27,45 @@ from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
-from Preprocess_dataframe import preprocess_data_hospital, preprocess_data_BPIC15, roll_sequence, one_hot_encode_activity, reshape_case, flatten_feature
+from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity, reshape_case, flatten_feature, prefix_selection
 from evaluation_metrics import calculate_evaluation_metrics
 
 
 if __name__ == "__main__":
     # Configure logging
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s %(levelname)s:%(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
+    logging.info(f"Preprocessing starts.")
 
     # preprocess dataframe
-    data_path = 'data/sepsis_cases_2.csv'
+    data_path = 'data/hospital_billing_2.csv'
     df = pd.read_csv(data_path, sep=';')
+    preprocessed_df = preprocess_data(df, time_column = "Complete Timestamp")
 
-    ohe = OneHotEncoder(sparse=False)
-    activities_encoded = ohe.fit_transform(df[['Activity']])
-    activities_df = pd.DataFrame(activities_encoded, columns=[f'ACT_{col.split("_")[-1]}' for col in ohe.get_feature_names_out(['Activity'])])
+    # Prefix selection
+    n = 7
+    encoded_df = prefix_selection(preprocessed_df, n)
 
-    encoded_df = pd.concat([df[['Case ID', 'timesincelastevent']], activities_df], axis=1)
-    scaler = MinMaxScaler()
-    encoded_df['timesincelastevent'] = scaler.fit_transform(encoded_df[['timesincelastevent']])
-
-    # Sorting the data by Case ID and timestamp to ensure correct sequence
-    encoded_df = encoded_df.join(df['time:timestamp'])
-    encoded_df.sort_values(by=['Case ID', 'time:timestamp'], inplace=True)
-    encoded_df.drop(columns=['time:timestamp'], inplace=True)
-
+    # one hot encoding
     reshaped_data = encoded_df.groupby('Case ID').apply(reshape_case)
     reshaped_data = reshaped_data.reset_index(level=1, drop=True)
-    reshaped_data = reshaped_data.drop("missing_caseid")
 
-    col_position = reshaped_data.columns.get_loc("timesincelastevent_14")
-    trunc_df = reshaped_data.iloc[:, :col_position]
-
-    unique_case_ids = trunc_df.index.unique()
+    # add label to each case
+    unique_case_ids = reshaped_data.index.unique()
     case_id_to_label = df.drop_duplicates(subset='Case ID').set_index('Case ID')['label']
     labels_for_trunc_df = unique_case_ids.map(case_id_to_label)
-    trunc_df['label'] = labels_for_trunc_df
-    trunc_df['label'] = trunc_df['label'].map({'regular': 0, 'deviant': 1})
-
-    trunc_df.fillna(0.0, inplace=True)
+    reshaped_data['label'] = labels_for_trunc_df
 
     logging.info(f"Dataframe preprocessed. ")
+    reshaped_data.to_csv("hospital_2_reshape.csv")
+
+    print("1")
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
     results = {}
     time_report_all = {}
-    X = trunc_df.drop('label', axis=1)
-    y = trunc_df['label']
+    X = reshaped_data.drop('label', axis=1)
+    y = reshaped_data['label']
 
     torch_device = "cpu"
     device_package = torch.cpu
