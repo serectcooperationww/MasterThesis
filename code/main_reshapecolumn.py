@@ -45,6 +45,7 @@ if __name__ == "__main__":
     n = 7
     encoded_df = prefix_selection(preprocessed_df, n)
 
+
     # one hot encoding
     reshaped_data = encoded_df.groupby('Case ID').apply(reshape_case)
     reshaped_data = reshaped_data.reset_index(level=1, drop=True)
