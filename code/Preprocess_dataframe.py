@@ -9,7 +9,7 @@ import random
 import time
 
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-
+from xgboost import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MultiLabelBinarizer, OneHotEncoder, MinMaxScaler

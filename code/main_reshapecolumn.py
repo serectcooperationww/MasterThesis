@@ -11,7 +11,7 @@ import logging
 from datetime import datetime
 
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-
+from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
@@ -94,8 +94,9 @@ if __name__ == "__main__":
             logging.info(f"Resampling done with {name}")
 
             # train model
-            clf = RandomForestClassifier(n_estimators=100, random_state=42)
-            clf.fit(X_resampled, y_resampled)
+            model = XGBClassifier()
+            # model = RandomForestClassifier(n_estimators=100, random_state=42)
+            model.fit(X_resampled, y_resampled)
 
             end_time = time.time()
             execution_time = end_time - start_time
@@ -103,7 +104,7 @@ if __name__ == "__main__":
             logging.info("Training done")
 
             # evaluate model
-            y_pred = clf.predict(X_test)
+            y_pred = model.predict(X_test)
             reports.append(classification_report(y_test, y_pred, output_dict=True))
 
         results[name], time_report_all[name] = reports, time_report
