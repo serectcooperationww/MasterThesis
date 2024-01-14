@@ -31,6 +31,26 @@ from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_
 from evaluation_metrics import calculate_evaluation_metrics
 
 
+def plot_revised_bar_chart(dataframe, n, label_column='label'):
+    # Filtering columns for the specific n value
+    act_columns_n = [col for col in dataframe.columns if re.match(fr'ACT_{n}_', col)]
+
+    # Creating a DataFrame for storing means
+    means_df = pd.DataFrame()
+
+    # For each ACT_{n}_{name} column, calculate the mean of the label column
+    for col in act_columns_n:
+        means_df[col] = dataframe.groupby(col)[label_column].mean()
+
+    # Plotting
+    plt.figure(figsize=(12, 6))
+    means_df.mean().plot(kind='bar')  # Taking mean across different rows (for different values in each ACT_{n}_{name})
+    plt.title(f'Mean of "{label_column}" for each ACT_{n} category')
+    plt.xlabel('ACT_{n} Categories')
+    plt.ylabel(f'Mean of {label_column}')
+    plt.xticks(rotation=45)
+    plt.show()
+
 if __name__ == "__main__":
     # Configure logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
