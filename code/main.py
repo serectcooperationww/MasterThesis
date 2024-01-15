@@ -15,12 +15,13 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler, MultiLabelBinarize
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report,  roc_auc_score
+from sklearn.metrics import classification_report,  roc_auc_score, accuracy_score
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
 from Preprocess_dataframe import preprocess_data, reshape_case, prefix_selection
-from evaluation_metrics import calculate_evaluation_metrics
+from evaluation_metrics import calculate_averaged_results, write_data_to_excel, create_excel_report
+from visualization import create_bar_charts
 
 
 if __name__ == "__main__":
@@ -53,6 +54,8 @@ if __name__ == "__main__":
     # resample and train data
     kf = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
     results = {}
+    accuracys ={}
+    AUCs = {}
     time_report_all = {}
     X = reshaped_data.drop('label', axis=1)
     y = reshaped_data['label']
@@ -66,6 +69,8 @@ if __name__ == "__main__":
     for name, resampler in resampling_techniques.items():
         logging.info(f"------ Using resampler: {name} ------")
         reports = []
+        accuracy = []
+        AUC = []
         time_report = []
 
         for train_index, test_index in kf.split(X,y):
@@ -97,14 +102,16 @@ if __name__ == "__main__":
             roc_auc_score(y_test, model.predict_proba(X_test)[:, 1])
 
             reports.append(classification_report(y_test, y_pred, output_dict=True))
-            reports.append({'AUC': roc_auc_score(y_test, model.predict_proba(X_test)[:, 1])})
+            accuracy.append(accuracy_score(y_test, y_pred))
+            AUC.append(roc_auc_score(y_test, model.predict_proba(X_test)[:, 1]))
 
-        results[name], time_report_all[name] = reports, time_report
+        results[name], accuracys[name], AUCs[name], time_report_all[name] = reports, accuracy, AUC, time_report
 
-    calculate_evaluation_metrics(results, time_report_all)
-    print(results)
-
-
+    # calculate_evaluation_metrics(results, accuracys, AUCs, time_report_all)
+    # averaged_results, averages_accuracy, averages_AUC, averages_timings = calculate_averaged_results(results, accuracys, AUCs, time_report_all)
+    #write_data_to_excel(averaged_results, averages_accuracy, averages_AUC, averages_timings, results, accuracys, AUCs, time_report_all, 'evaluation_metrics.xlsx')
+    create_excel_report(results, accuracys, AUCs, time_report_all, 'my_report.xlsx')
+    create_bar_charts(results, accuracys, AUCs, time_report_all)
 
 
 
