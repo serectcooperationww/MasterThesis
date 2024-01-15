@@ -65,6 +65,7 @@ if __name__ == "__main__":
     n = 7
     encoded_df = prefix_selection(preprocessed_df, n)
 
+    # aggregation
 
     # one hot encoding
     reshaped_data = encoded_df.groupby('Case ID').apply(reshape_case)
@@ -78,8 +79,6 @@ if __name__ == "__main__":
 
     logging.info(f"Dataframe preprocessed. ")
     reshaped_data.to_csv("hospital_2_reshape.csv")
-
-    print("1")
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)

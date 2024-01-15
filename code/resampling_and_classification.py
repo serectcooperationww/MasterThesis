@@ -18,8 +18,10 @@ resampling_techniques = {
         "Synthetic minority oversampling-Tomek’s link Over-Sampling (ST)": SMOTETomek(),
         "Instance hardness threshold Under-Sampling (IH)": InstanceHardnessThreshold(),
         "Neighbourhood cleaning rule Hybrid-Sampling(NC)": NeighbourhoodCleaningRule(),
-        "One-sided selection (OS)": OneSidedSelection(),
-        "ADASYN": ADASYN(random_state=0),
-        "NearMiss": NearMiss(version=1),
+        "One-sided selection Under-Sampling (OS)": OneSidedSelection(),
+        "ADASYN Over-Sampling (AD)": ADASYN(random_state=0),
+        "NearMiss Under-Sampling(NM)": NearMiss(version=1),
         "No Filter": None
     }
+
+# 5 Oversampling, 9 Undersampling, 2 Hybrid sampling
