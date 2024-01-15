@@ -22,34 +22,11 @@ from sklearn.metrics import classification_report
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.preprocessing import OneHotEncoder
 
-from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
-from imblearn.under_sampling import RandomUnderSampler, NearMiss
-
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
 from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity, reshape_case, flatten_feature, prefix_selection
 from evaluation_metrics import calculate_evaluation_metrics
 
-
-def plot_revised_bar_chart(dataframe, n, label_column='label'):
-    # Filtering columns for the specific n value
-    act_columns_n = [col for col in dataframe.columns if re.match(fr'ACT_{n}_', col)]
-
-    # Creating a DataFrame for storing means
-    means_df = pd.DataFrame()
-
-    # For each ACT_{n}_{name} column, calculate the mean of the label column
-    for col in act_columns_n:
-        means_df[col] = dataframe.groupby(col)[label_column].mean()
-
-    # Plotting
-    plt.figure(figsize=(12, 6))
-    means_df.mean().plot(kind='bar')  # Taking mean across different rows (for different values in each ACT_{n}_{name})
-    plt.title(f'Mean of "{label_column}" for each ACT_{n} category')
-    plt.xlabel('ACT_{n} Categories')
-    plt.ylabel(f'Mean of {label_column}')
-    plt.xticks(rotation=45)
-    plt.show()
 
 if __name__ == "__main__":
     # Configure logging
@@ -64,8 +41,6 @@ if __name__ == "__main__":
     # Prefix selection
     n = 7
     encoded_df = prefix_selection(preprocessed_df, n)
-
-    # aggregation
 
     # one hot encoding
     reshaped_data = encoded_df.groupby('Case ID').apply(reshape_case)
