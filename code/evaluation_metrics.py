@@ -9,17 +9,21 @@ def calculate_evaluation_metrics(results, time_report_all):
         # Initialize dictionaries to store summed metrics for each label
         summed_metrics = {
             '0': {'precision': 0, 'recall': 0, 'f1-score': 0, 'support': 0},  # Metrics for 'regular' (label 0)
-            '1': {'precision': 0, 'recall': 0, 'f1-score': 0, 'support': 0}   # Metrics for 'deviant' (label 1)
+            '1': {'precision': 0, 'recall': 0, 'f1-score': 0, 'support': 0},  # Metrics for 'deviant' (label 1)
+            'accuracy': 0,
+            'AUC': 0
         }
 
         # Sum up the metrics across all folds
         for report_idx in range(len(reports)):
-            for label in ['0', '1']:
+            for label in ['0', '1', 'accuracy', 'AUC']:
                 if label in reports[report_idx]:
                     summed_metrics[label]['precision'] += reports[report_idx][str(label)]['precision']
                     summed_metrics[label]['recall'] += reports[report_idx][str(label)]['recall']
                     summed_metrics[label]['f1-score'] += reports[report_idx][str(label)]['f1-score']
                     summed_metrics[label]['support'] += reports[report_idx][str(label)]['support']
+                    summed_metrics[label]['accuracy'] += reports[report_idx][str(label)]
+                    summed_metrics[label]['AUC'] += reports[report_idx][str(label)]
 
         for key in time_report_all:
             summed_timings[key] += time_report_all[key][report_idx]
