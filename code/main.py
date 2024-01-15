@@ -10,21 +10,16 @@ import time
 import logging
 from datetime import datetime
 
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 from xgboost import XGBClassifier
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, MultiLabelBinarizer, OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.metrics import classification_report,  roc_auc_score
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
-from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity, reshape_case, flatten_feature, prefix_selection
+from Preprocess_dataframe import preprocess_data, reshape_case, prefix_selection
 from evaluation_metrics import calculate_evaluation_metrics
 
 
@@ -53,7 +48,7 @@ if __name__ == "__main__":
     reshaped_data['label'] = labels_for_trunc_df
 
     logging.info(f"Dataframe preprocessed. ")
-    reshaped_data.to_csv("hospital_2_reshape.csv")
+    # reshaped_data.to_csv("hospital_2_reshape.csv")
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
@@ -89,8 +84,7 @@ if __name__ == "__main__":
             logging.info(f"Resampling done with {name}")
 
             # train model
-            model = XGBClassifier()
-            # model = RandomForestClassifier(n_estimators=100, random_state=42)
+            model = XGBClassifier(random_state = 0)
             model.fit(X_resampled, y_resampled)
 
             end_time = time.time()
@@ -100,7 +94,10 @@ if __name__ == "__main__":
 
             # evaluate model
             y_pred = model.predict(X_test)
+            roc_auc_score(y_test, model.predict_proba(X_test)[:, 1])
+
             reports.append(classification_report(y_test, y_pred, output_dict=True))
+            reports.append({'AUC': roc_auc_score(y_test, model.predict_proba(X_test)[:, 1])})
 
         results[name], time_report_all[name] = reports, time_report
 

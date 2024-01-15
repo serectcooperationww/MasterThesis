@@ -22,31 +22,6 @@ from LSTMencoder_pytorch import LSTM, SequenceDataset
 from resampling_and_classification import resampling_techniques
 
 
-
-
-
-def preprocess_data_hospital(df):
-    df['Complete Timestamp'] = pd.to_datetime(df['Complete Timestamp'])
-    df['label'] = df['label'].map({'regular': 0, 'deviant': 1})
-    df_sorted = df.sort_values(by=['Case ID', 'Complete Timestamp'])
-    df_sorted['Activity'] = pd.factorize(df_sorted['Activity'])[0]
-
-    scaler = MinMaxScaler()
-    df_sorted['timesincelastevent'] = scaler.fit_transform(df_sorted[['timesincelastevent']])
-    print(df_sorted)
-    return(df_sorted)
-
-def preprocess_data_BPIC15(df):
-    df['time:timestamp'] = pd.to_datetime(df['time:timestamp'])
-    df['label'] = df['label'].map({'regular': 0, 'deviant': 1})
-    df_sorted = df.sort_values(by=['Case ID', 'time:timestamp'])
-    df_sorted['Activity'] = pd.factorize(df_sorted['Activity'])[0]
-
-    scaler = MinMaxScaler()
-    df_sorted['timesincelastevent'] = scaler.fit_transform(df_sorted[['timesincelastevent']])
-    print(df_sorted)
-    return (df_sorted)
-
 def preprocess_data(df, time_column):
     df['label'] = df['label'].map({'regular': 0, 'deviant': 1})
 
@@ -66,46 +41,6 @@ def preprocess_data(df, time_column):
     return encoded_df
 
 
-def roll_sequence(data, case_column="Case ID"):
-    trace = None
-    for column in data.columns:
-        if column != case_column:
-            data_col = data.groupby(case_column)[column].apply(np.array)
-            if trace is None:
-                trace = data_col
-            else:
-                trace = pd.merge(trace, data_col, on=case_column, how='inner')
-    return trace
-
-def one_hot_encode_activity(df):
-    max_val = max(max(lst) for lst in df['Activity'])
-    max_length = max(len(lst) for lst in df['Activity'])
-
-    df['feature'] = df.apply(lambda row:
-                              [encoded_list + [row['timesincelastevent'][i]] for i, encoded_list in enumerate(
-                                  [[int(i == val) for i in range(max_val + 1)] for val in row['Activity']]
-                              )] + [[0] * (max_val + 1) + [0]] * (max_length - len(row['Activity'])),
-                              axis=1
-                              )
-
-    return df
-
-def flatten_feature(data):
-    flattened_data = []
-    for sequence in data:
-        flattened_data.append([feature for sublist in sequence for feature in sublist])
-    return flattened_data
-
-def create_windows(sequences, labels, window_size):
-    X = []
-    y = []
-    for sequence, label in zip(sequences, labels):
-        for i in range(len(sequence) - window_size + 1):
-            window = sequence[i:i+window_size]
-            X.append(window)
-            y.append(label)
-    return X, y
-
 def reshape_case(df):
     # Creating column names
     col_names = []
@@ -121,6 +56,7 @@ def reshape_case(df):
     reshaped_df = pd.DataFrame([reshaped_values], columns=col_names)
 
     return reshaped_df
+
 
 def prefix_selection(df, n):
     filtered_df = df.groupby("Case ID").filter(lambda x: len(x) >= n)
