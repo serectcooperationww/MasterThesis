@@ -49,7 +49,6 @@ if __name__ == "__main__":
     reshaped_data['label'] = labels_for_trunc_df
 
     logging.info(f"Dataframe preprocessed. ")
-    # reshaped_data.to_csv("hospital_2_reshape.csv")
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
