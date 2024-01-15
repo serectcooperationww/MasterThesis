@@ -11,7 +11,7 @@ import logging
 from datetime import datetime
 
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from xgboost import XGBClassifier
+
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
@@ -20,73 +20,39 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.preprocessing import OneHotEncoder
 
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
-from Preprocess_dataframe import preprocess_data, roll_sequence, one_hot_encode_activity, reshape_case, flatten_feature, prefix_selection
+from Preprocess_dataframe import preprocess_data_hospital, preprocess_data_BPIC15, roll_sequence, one_hot_encode_activity, flatten_feature
 from evaluation_metrics import calculate_evaluation_metrics
 
 
-def plot_revised_bar_chart(dataframe, n, label_column='label'):
-    # Filtering columns for the specific n value
-    act_columns_n = [col for col in dataframe.columns if re.match(fr'ACT_{n}_', col)]
-
-    # Creating a DataFrame for storing means
-    means_df = pd.DataFrame()
-
-    # For each ACT_{n}_{name} column, calculate the mean of the label column
-    for col in act_columns_n:
-        means_df[col] = dataframe.groupby(col)[label_column].mean()
-
-    # Plotting
-    plt.figure(figsize=(12, 6))
-    means_df.mean().plot(kind='bar')  # Taking mean across different rows (for different values in each ACT_{n}_{name})
-    plt.title(f'Mean of "{label_column}" for each ACT_{n} category')
-    plt.xlabel('ACT_{n} Categories')
-    plt.ylabel(f'Mean of {label_column}')
-    plt.xticks(rotation=45)
-    plt.show()
-
 if __name__ == "__main__":
     # Configure logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
-    logging.info(f"Preprocessing starts.")
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s %(levelname)s:%(message)s')
 
     # preprocess dataframe
-    data_path = 'data/hospital_billing_2.csv'
+    data_path = 'data/sepsis_cases_2.csv'
     df = pd.read_csv(data_path, sep=';')
-    preprocessed_df = preprocess_data(df, time_column = "Complete Timestamp")
+    df_unbalanced = preprocess_data_BPIC15(df)
+    df_rolled = roll_sequence(df_unbalanced)
+    df_onehotencoded = one_hot_encode_activity(df_rolled)[["label", "feature"]]
+    df_onehotencoded.loc[:, 'label'] = [x[0] for x in df_onehotencoded['label']]
 
-    # Prefix selection
-    n = 7
-    encoded_df = prefix_selection(preprocessed_df, n)
-
-
-    # one hot encoding
-    reshaped_data = encoded_df.groupby('Case ID').apply(reshape_case)
-    reshaped_data = reshaped_data.reset_index(level=1, drop=True)
-
-    # add label to each case
-    unique_case_ids = reshaped_data.index.unique()
-    case_id_to_label = df.drop_duplicates(subset='Case ID').set_index('Case ID')['label']
-    labels_for_trunc_df = unique_case_ids.map(case_id_to_label)
-    reshaped_data['label'] = labels_for_trunc_df
-
-    logging.info(f"Dataframe preprocessed. ")
-    reshaped_data.to_csv("hospital_2_reshape.csv")
-
-    print("1")
+    logging.info(f"Dataframe preprocessed. Number of Case: {df_onehotencoded.shape[0]}")
+    logging.info(f"Length of each feature: {len(df_onehotencoded.feature[0][0])}")
+    logging.info(f"longest trace: {len(df_onehotencoded.feature[0])}")
 
     # resample and train data
     kf = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
     results = {}
     time_report_all = {}
-    X = reshaped_data.drop('label', axis=1)
-    y = reshaped_data['label']
+    X = df_onehotencoded.drop('label', axis=1)
+    y = df_onehotencoded['label']
 
     torch_device = "cpu"
     device_package = torch.cpu
@@ -114,19 +80,40 @@ if __name__ == "__main__":
 
             logging.info(f"Resampling done with {name}")
 
-            # train model
-            model = XGBClassifier()
-            # model = RandomForestClassifier(n_estimators=100, random_state=42)
-            model.fit(X_resampled, y_resampled)
+            # prepare dataloader
+            df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
+            Encoded_data = SequenceDataset(df_resampled)
+            a, b = Encoded_data[:]
+            dataloader = DataLoader(Encoded_data, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+
+            df_test = pd.concat([X_test, y_test], axis=1)
+            Encoded_data_test = SequenceDataset(df_test)
+            dataloader_test = DataLoader(Encoded_data_test, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+
+            logging.info("Dataloader prepared")
+
+            # train lstm model
+            sequences, labels = next(iter(dataloader))
+            input_size = sequences.shape[2]
+            hidden_size = 50
+            num_classes = 2
+
+            model = LSTM(input_size, hidden_size, num_classes).to(torch_device)
+            criterion = nn.NLLLoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+            train_model(dataloader, model, criterion, optimizer, torch_device, num_epochs=5)
 
             end_time = time.time()
             execution_time = end_time - start_time
             time_report.append(execution_time)
+
             logging.info("Training done")
 
             # evaluate model
-            y_pred = model.predict(X_test)
-            reports.append(classification_report(y_test, y_pred, output_dict=True))
+            metrics = evaluate_model(dataloader_test, model)
+            reports.append(metrics)
+            logging.info("Evaluation done")
 
         results[name], time_report_all[name] = reports, time_report
 
