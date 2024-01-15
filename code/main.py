@@ -106,9 +106,6 @@ if __name__ == "__main__":
 
         results[name], accuracys[name], AUCs[name], time_report_all[name] = reports, accuracy, AUC, time_report
 
-    # calculate_evaluation_metrics(results, accuracys, AUCs, time_report_all)
-    # averaged_results, averages_accuracy, averages_AUC, averages_timings = calculate_averaged_results(results, accuracys, AUCs, time_report_all)
-    #write_data_to_excel(averaged_results, averages_accuracy, averages_AUC, averages_timings, results, accuracys, AUCs, time_report_all, 'evaluation_metrics.xlsx')
     create_excel_report(results, accuracys, AUCs, time_report_all, 'my_report.xlsx')
     create_bar_charts(results, accuracys, AUCs, time_report_all)
 
