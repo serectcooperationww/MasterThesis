@@ -151,7 +151,6 @@ def write_data_to_excel(averaged_results, averages_accuracy, averages_AUC, avera
     writer.save()
 
 
-import pandas as pd
 
 def create_excel_report(results, accuracys, AUCs, time_report_all, filename='output_metrics.xlsx'):
     """

@@ -182,7 +182,7 @@ def apply_resampling_and_classification(resampler, dataloader): #X, y,
 
 
 
-df = pd.read_csv('data/hospital_billing_2.csv', sep=';')
+df = pd.read_csv('../data/hospital_billing_2.csv', sep=';')
 df = df.head(100)
 df_unbalanced = preprocess_data(df)
 df_rolled = roll_sequence(df_unbalanced)
