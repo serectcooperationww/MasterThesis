@@ -5,6 +5,7 @@ from imblearn.under_sampling import NeighbourhoodCleaningRule
 
 
 resampling_techniques = {
+        "Original": None,
         "RO": RandomOverSampler(random_state=0),
         "SM": SMOTE(random_state=0),
         "BS": BorderlineSMOTE(random_state=0),
@@ -21,7 +22,6 @@ resampling_techniques = {
         "NM": NearMiss(version=1),
         "SE": SMOTEENN(random_state=0),
         "NC": NeighbourhoodCleaningRule(),
-        "Original": None
     }
 
 # 5 Oversampling, 9 Undersampling, 2 Hybrid sampling

@@ -30,9 +30,9 @@ if __name__ == "__main__":
     logging.info(f"Preprocessing starts.")
 
     # preprocess dataframe
-    data_path = 'data/hospital_billing_2.csv'
+    data_path = 'data/sepsis_cases_2.csv'
     df = pd.read_csv(data_path, sep=';')
-    preprocessed_df = preprocess_data(df, time_column = "Complete Timestamp")
+    preprocessed_df = preprocess_data(df, time_column = "time:timestamp")
 
     # Prefix selection
     n = 7
@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
         results[name], accuracys[name], AUCs[name], time_report_all[name] = reports, accuracy, AUC, time_report
 
-    create_excel_report(results, accuracys, AUCs, time_report_all, 'my_report.xlsx')
+    create_excel_report(results, accuracys, AUCs, time_report_all, 'report_sepsis')
     create_bar_charts(results, accuracys, AUCs, time_report_all)
 
 

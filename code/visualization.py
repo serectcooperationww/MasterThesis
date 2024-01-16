@@ -83,12 +83,14 @@ def create_bar_charts(results, accuracys, AUCs, time_report_all):
 
     # Academic color palette
     color_palette = ["#fd7f6f", "#7eb0d5", "#b2e061", "#bd7ebe", "#ffb55a", "#ffee65", "#beb9db", "#fdcce5", "#8bd3c7"]
+    bar_width = 0.5
 
     # Chart for label '0'
     plt.figure(figsize=(25, 6))
     ax = df_label_0.set_index('Method')[['Precision', 'Recall', 'F1-Score', 'Accuracy', 'AUC']].plot(kind='bar',
+                                                                                                     width=bar_width,
                                                                                                      color=color_palette)
-    plt.title('Mean Metrics for Label "0"')
+    plt.title('Mean Metrics for Label "regular"')
     plt.ylabel('Score')
     plt.xticks(rotation=0)
     plt.subplots_adjust(bottom=0.2, right=0.8)
@@ -99,8 +101,9 @@ def create_bar_charts(results, accuracys, AUCs, time_report_all):
     # Chart for label '1'
     plt.figure(figsize=(25, 6))
     ax = df_label_1.set_index('Method')[['Precision', 'Recall', 'F1-Score', 'Accuracy', 'AUC']].plot(kind='bar',
+                                                                                                     width=bar_width,
                                                                                                      color=color_palette)
-    plt.title('Mean Metrics for Label "1"')
+    plt.title('Mean Metrics for Label "deviant"')
     plt.ylabel('Score')
     plt.xticks(rotation=0)
     plt.subplots_adjust(bottom=0.2, right=0.8)
