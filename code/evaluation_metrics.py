@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime
+import time
 
 def calculate_evaluation_metrics(results, accuracys, AUCs, time_report_all):
     averaged_results = {}
@@ -202,6 +203,6 @@ def create_excel_report(results, accuracys, AUCs, time_report_all, filename='out
         df_sheet1.to_excel(writer, sheet_name='Original Data', index=False)
         df_sheet2.to_excel(writer, sheet_name='Aggregated Metrics', index=False)
 
-    print(f"Excel file '{filename}' has been created.")
+    print(f"Excel file '{out_path}' has been created.")
 
 
