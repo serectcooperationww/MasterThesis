@@ -195,8 +195,8 @@ def create_excel_report(results, accuracys, AUCs, time_report_all, filename='out
     df_sheet2 = pd.DataFrame(data_sheet2, columns=['Method', 'Label', 'Precision', 'Recall', 'F1-Score', 'Support', 'Average Accuracy', 'Average AUC', 'Average Training Time'])
 
     # Writing to Excel
-    time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    out_path = f'D:/SS2023/MasterThesis/code/metrics_report/{filename}_{time}.xlsx'
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    out_path = f'D:/SS2023/MasterThesis/code/metrics_report/{filename}_{timestr}.xlsx'
 
     with pd.ExcelWriter(out_path, engine='openpyxl') as writer:
         df_sheet1.to_excel(writer, sheet_name='Original Data', index=False)
