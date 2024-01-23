@@ -16,12 +16,15 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report,  roc_auc_score, accuracy_score
+from sklearn.base import TransformerMixin
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
 from Preprocess_dataframe import preprocess_data, reshape_case, prefix_selection
 from evaluation_metrics import calculate_averaged_results, write_data_to_excel, create_excel_report
 from visualization import create_bar_charts
+from AggregateTransformer import AggregateTransformer
+from StaticTransformer import StaticTransformer
 
 
 if __name__ == "__main__":
@@ -32,11 +35,40 @@ if __name__ == "__main__":
     # preprocess dataframe
     data_path = 'data/sepsis_cases_2.csv'
     df = pd.read_csv(data_path, sep=';')
-    preprocessed_df = preprocess_data(df, time_column = "time:timestamp")
+    # preprocessed_df = preprocess_data(df, time_column = "time:timestamp")
 
     # Prefix selection
     n = 7
-    encoded_df = prefix_selection(preprocessed_df, n)
+    encoded_df = prefix_selection(df, n)
+
+    # columns
+    dynamic_cat_cols = ["Activity", 'org:group']  # i.e. event attributes
+    static_cat_cols = ['Diagnose', 'DiagnosticArtAstrup', 'DiagnosticBlood', 'DiagnosticECG',
+                       'DiagnosticIC', 'DiagnosticLacticAcid', 'DiagnosticLiquor',
+                       'DiagnosticOther', 'DiagnosticSputum', 'DiagnosticUrinaryCulture',
+                       'DiagnosticUrinarySediment', 'DiagnosticXthorax', 'DisfuncOrg',
+                       'Hypotensie', 'Hypoxie', 'InfectionSuspected', 'Infusion', 'Oligurie',
+                       'SIRSCritHeartRate', 'SIRSCritLeucos', 'SIRSCritTachypnea',
+                       'SIRSCritTemperature',
+                       'SIRSCriteria2OrMore']  # i.e. case attributes that are known from the start
+    dynamic_num_cols = ['CRP', 'LacticAcid', 'Leucocytes']
+    static_num_cols = ['Age']
+
+    # Combine columns
+    cat_cols = dynamic_cat_cols + static_cat_cols
+    num_cols = dynamic_num_cols + static_num_cols
+
+    # Initialize AggregateTransformer
+    # Replace 'case_id_col' with the name of your case ID column
+    # The boolean and fillna parameters depend on your specific requirements
+    transformer = StaticTransformer(case_id_col='Case ID', cat_cols=cat_cols, num_cols=num_cols,
+                                       fillna=True)
+
+    # Fit the transformer (this step is just formal in this case)
+    transformer.fit(encoded_df)
+
+    # Transform the DataFrame
+    transformed_df = transformer.transform(encoded_df)
 
     # one hot encoding
     reshaped_data = encoded_df.groupby('Case ID').apply(reshape_case)

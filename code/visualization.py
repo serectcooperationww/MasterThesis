@@ -96,6 +96,7 @@ def create_bar_charts(results, accuracys, AUCs, time_report_all):
     plt.subplots_adjust(bottom=0.2, right=0.8)
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.style.use('seaborn-dark-palette')
+    plt.gcf().set_size_inches(12, 6)
     plt.show()
 
     # Chart for label '1'
@@ -108,6 +109,7 @@ def create_bar_charts(results, accuracys, AUCs, time_report_all):
     plt.xticks(rotation=0)
     plt.subplots_adjust(bottom=0.2, right=0.8)
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.gcf().set_size_inches(12, 6)
     plt.show()
 
     # Chart for mean training time
