@@ -35,13 +35,12 @@ if __name__ == "__main__":
     # preprocess dataframe
     data_path = 'data/sepsis_cases_2.csv'
     df = pd.read_csv(data_path, sep=';')
-    # preprocessed_df = preprocess_data(df, time_column = "time:timestamp")
 
     # Prefix selection
     n = 7
     encoded_df = prefix_selection(df, n)
 
-    # columns
+    # Aggregation encoding
     dynamic_cat_cols = ["Activity", 'org:group']  # i.e. event attributes
     static_cat_cols = ['Diagnose', 'DiagnosticArtAstrup', 'DiagnosticBlood', 'DiagnosticECG',
                        'DiagnosticIC', 'DiagnosticLacticAcid', 'DiagnosticLiquor',
@@ -54,31 +53,14 @@ if __name__ == "__main__":
     dynamic_num_cols = ['CRP', 'LacticAcid', 'Leucocytes']
     static_num_cols = ['Age']
 
-    # Combine columns
     cat_cols = dynamic_cat_cols + static_cat_cols
     num_cols = dynamic_num_cols + static_num_cols
 
-    # Initialize AggregateTransformer
-    # Replace 'case_id_col' with the name of your case ID column
-    # The boolean and fillna parameters depend on your specific requirements
-    transformer = StaticTransformer(case_id_col='Case ID', cat_cols=cat_cols, num_cols=num_cols,
+    transformer = AggregateTransformer(case_id_col='Case ID', cat_cols=cat_cols, num_cols=num_cols, boolean=True,
                                        fillna=True)
 
-    # Fit the transformer (this step is just formal in this case)
     transformer.fit(encoded_df)
-
-    # Transform the DataFrame
     transformed_df = transformer.transform(encoded_df)
-
-    # one hot encoding
-    reshaped_data = encoded_df.groupby('Case ID').apply(reshape_case)
-    reshaped_data = reshaped_data.reset_index(level=1, drop=True)
-
-    # add label to each case
-    unique_case_ids = reshaped_data.index.unique()
-    case_id_to_label = df.drop_duplicates(subset='Case ID').set_index('Case ID')['label']
-    labels_for_trunc_df = unique_case_ids.map(case_id_to_label)
-    reshaped_data['label'] = labels_for_trunc_df
 
     logging.info(f"Dataframe preprocessed. ")
 
