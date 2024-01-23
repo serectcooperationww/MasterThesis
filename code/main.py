@@ -32,7 +32,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
     logging.info(f"Preprocessing starts.")
 
-    # preprocess dataframe
+    # Load dataframe
     data_path = 'data/sepsis_cases_2.csv'
     df = pd.read_csv(data_path, sep=';')
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     encoded_df = prefix_selection(df, n)
 
     # Aggregation encoding
-    dynamic_cat_cols = ["Activity", 'org:group']  # i.e. event attributes
+    dynamic_cat_cols = ["Activity", 'org:group']
     static_cat_cols = ['Diagnose', 'DiagnosticArtAstrup', 'DiagnosticBlood', 'DiagnosticECG',
                        'DiagnosticIC', 'DiagnosticLacticAcid', 'DiagnosticLiquor',
                        'DiagnosticOther', 'DiagnosticSputum', 'DiagnosticUrinaryCulture',
@@ -49,7 +49,7 @@ if __name__ == "__main__":
                        'Hypotensie', 'Hypoxie', 'InfectionSuspected', 'Infusion', 'Oligurie',
                        'SIRSCritHeartRate', 'SIRSCritLeucos', 'SIRSCritTachypnea',
                        'SIRSCritTemperature',
-                       'SIRSCriteria2OrMore']  # i.e. case attributes that are known from the start
+                       'SIRSCriteria2OrMore']
     dynamic_num_cols = ['CRP', 'LacticAcid', 'Leucocytes']
     static_num_cols = ['Age']
 
@@ -62,6 +62,13 @@ if __name__ == "__main__":
     transformer.fit(encoded_df)
     transformed_df = transformer.transform(encoded_df)
 
+    # add label to each case
+    unique_case_ids = transformed_df.index.unique()
+    case_id_to_label = df.drop_duplicates(subset='Case ID').set_index('Case ID')['label']
+    labels_for_trunc_df = unique_case_ids.map(case_id_to_label)
+    transformed_df['label'] = labels_for_trunc_df
+    transformed_df['label'] = transformed_df['label'].map({'regular': 0, 'deviant': 1})
+
     logging.info(f"Dataframe preprocessed. ")
 
     # resample and train data
@@ -70,8 +77,8 @@ if __name__ == "__main__":
     accuracys ={}
     AUCs = {}
     time_report_all = {}
-    X = reshaped_data.drop('label', axis=1)
-    y = reshaped_data['label']
+    X = transformed_df.drop('label', axis=1)
+    y = transformed_df['label']
 
     torch_device = "cpu"
     device_package = torch.cpu
