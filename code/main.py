@@ -23,6 +23,7 @@ from resampling_and_classification import resampling_techniques
 from Preprocess_dataframe import preprocess_data, reshape_case, prefix_selection, encoding, add_label
 from evaluation_metrics import calculate_averaged_results, write_data_to_excel, create_excel_report
 from visualization import create_bar_charts, plot_distribution
+from config import timestr
 
 
 
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     # Configure logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
     logging.info(f"Preprocessing starts.")
-    timestr = time.strftime("%Y%m%d-%H%M")
+
 
     # Load dataframe
     data_path = 'data/sepsis_cases_2.csv'

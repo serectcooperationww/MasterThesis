@@ -6,6 +6,7 @@ import numpy as np
 import os
 from datetime import datetime
 import time
+from config import timestr
 
 
 # df = pd.read_csv('hospital_2_reshape.csv')
@@ -155,7 +156,7 @@ def create_bar_charts(results, accuracys, AUCs, time_report_all):
     plt.legend(['Training Time'], loc='upper left', bbox_to_anchor=(1, 0.5))
     plt.subplots_adjust(right=0.8)
 
-    for p in ax.patches:
+    for p in ax:
         ax.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()),
                     ha='center', va='center', fontsize=10, color='black', xytext=(0, 5),
                     textcoords='offset points')
