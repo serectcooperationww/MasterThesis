@@ -20,6 +20,8 @@ from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset
 from resampling_and_classification import resampling_techniques
+from AggregateTransformer import AggregateTransformer
+from StaticTransformer import StaticTransformer
 
 
 def preprocess_data(df, time_column):
@@ -61,3 +63,43 @@ def reshape_case(df):
 def prefix_selection(df, n):
     filtered_df = df.groupby("Case ID").filter(lambda x: len(x) >= n)
     return filtered_df.groupby("Case ID").apply(lambda x: x.head(n)).reset_index(drop=True)
+
+
+def encoding(df, encoding_method="agg", dataset="sepsis"):
+
+    # Aggregation encoding
+    if dataset == "sepsis":
+        dynamic_cat_cols = ["Activity", 'org:group']
+        static_cat_cols = ['Diagnose', 'DiagnosticArtAstrup', 'DiagnosticBlood', 'DiagnosticECG',
+                           'DiagnosticIC', 'DiagnosticLacticAcid', 'DiagnosticLiquor',
+                           'DiagnosticOther', 'DiagnosticSputum', 'DiagnosticUrinaryCulture',
+                           'DiagnosticUrinarySediment', 'DiagnosticXthorax', 'DisfuncOrg',
+                           'Hypotensie', 'Hypoxie', 'InfectionSuspected', 'Infusion', 'Oligurie',
+                           'SIRSCritHeartRate', 'SIRSCritLeucos', 'SIRSCritTachypnea',
+                           'SIRSCritTemperature',
+                           'SIRSCriteria2OrMore']
+        dynamic_num_cols = ['CRP', 'LacticAcid', 'Leucocytes']
+        static_num_cols = ['Age']
+
+        cat_cols = dynamic_cat_cols + static_cat_cols
+        num_cols = dynamic_num_cols + static_num_cols
+
+    if encoding_method == "agg":
+        transformer = AggregateTransformer(case_id_col='Case ID', cat_cols=cat_cols, num_cols=num_cols, boolean=True,
+                                           fillna=True)
+    if encoding_method == "static":
+        transformer = StaticTransformer(case_id_col='Case ID', cat_cols=cat_cols, num_cols=num_cols,
+                                           fillna=True)
+
+    transformer.fit(df)
+    transformed_df = transformer.transform(df)
+
+    return transformed_df
+
+def add_label(original_df, transformed_df):
+    unique_case_ids = transformed_df.index.unique()
+    case_id_to_label = original_df.drop_duplicates(subset='Case ID').set_index('Case ID')['label']
+    labels_for_trunc_df = unique_case_ids.map(case_id_to_label)
+    transformed_df['label'] = labels_for_trunc_df
+    transformed_df['label'] = transformed_df['label'].map({'regular': 0, 'deviant': 1})
+    return transformed_df

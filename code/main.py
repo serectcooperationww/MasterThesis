@@ -20,17 +20,17 @@ from sklearn.base import TransformerMixin
 
 from LSTMencoder_pytorch import LSTM, SequenceDataset, train_model, evaluate_model
 from resampling_and_classification import resampling_techniques
-from Preprocess_dataframe import preprocess_data, reshape_case, prefix_selection
+from Preprocess_dataframe import preprocess_data, reshape_case, prefix_selection, encoding, add_label
 from evaluation_metrics import calculate_averaged_results, write_data_to_excel, create_excel_report
-from visualization import create_bar_charts
-from AggregateTransformer import AggregateTransformer
-from StaticTransformer import StaticTransformer
+from visualization import create_bar_charts, plot_distribution
+
 
 
 if __name__ == "__main__":
     # Configure logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
     logging.info(f"Preprocessing starts.")
+    timestr = time.strftime("%Y%m%d-%H%M")
 
     # Load dataframe
     data_path = 'data/sepsis_cases_2.csv'
@@ -40,34 +40,15 @@ if __name__ == "__main__":
     n = 7
     encoded_df = prefix_selection(df, n)
 
-    # Aggregation encoding
-    dynamic_cat_cols = ["Activity", 'org:group']
-    static_cat_cols = ['Diagnose', 'DiagnosticArtAstrup', 'DiagnosticBlood', 'DiagnosticECG',
-                       'DiagnosticIC', 'DiagnosticLacticAcid', 'DiagnosticLiquor',
-                       'DiagnosticOther', 'DiagnosticSputum', 'DiagnosticUrinaryCulture',
-                       'DiagnosticUrinarySediment', 'DiagnosticXthorax', 'DisfuncOrg',
-                       'Hypotensie', 'Hypoxie', 'InfectionSuspected', 'Infusion', 'Oligurie',
-                       'SIRSCritHeartRate', 'SIRSCritLeucos', 'SIRSCritTachypnea',
-                       'SIRSCritTemperature',
-                       'SIRSCriteria2OrMore']
-    dynamic_num_cols = ['CRP', 'LacticAcid', 'Leucocytes']
-    static_num_cols = ['Age']
-
-    cat_cols = dynamic_cat_cols + static_cat_cols
-    num_cols = dynamic_num_cols + static_num_cols
-
-    transformer = AggregateTransformer(case_id_col='Case ID', cat_cols=cat_cols, num_cols=num_cols, boolean=True,
-                                       fillna=True)
-
-    transformer.fit(encoded_df)
-    transformed_df = transformer.transform(encoded_df)
+    # Encoding, available options: agg, static
+    transformed_df = encoding(encoded_df, encoding_method="agg", dataset="sepsis")
 
     # add label to each case
-    unique_case_ids = transformed_df.index.unique()
-    case_id_to_label = df.drop_duplicates(subset='Case ID').set_index('Case ID')['label']
-    labels_for_trunc_df = unique_case_ids.map(case_id_to_label)
-    transformed_df['label'] = labels_for_trunc_df
-    transformed_df['label'] = transformed_df['label'].map({'regular': 0, 'deviant': 1})
+    transformed_df = add_label(df, transformed_df)
+
+    # Plot distribution
+    activity_columns = [col for col in transformed_df.columns if "Activity" in col]
+    plot_distribution(transformed_df, activity_columns, "Original Dataset")
 
     logging.info(f"Dataframe preprocessed. ")
 
@@ -80,18 +61,13 @@ if __name__ == "__main__":
     X = transformed_df.drop('label', axis=1)
     y = transformed_df['label']
 
-    torch_device = "cpu"
-    device_package = torch.cpu
-    if torch.cuda.is_available():
-        torch_device = torch.device("cuda")
-        device_package = torch.cuda
-
     for name, resampler in resampling_techniques.items():
         logging.info(f"------ Using resampler: {name} ------")
         reports = []
         accuracy = []
         AUC = []
         time_report = []
+        resampled_dfs = []
 
         for train_index, test_index in kf.split(X,y):
 
@@ -105,6 +81,10 @@ if __name__ == "__main__":
                 X_resampled, y_resampled = resampler.fit_resample(X_train, y_train)
             else:
                 X_resampled, y_resampled = X_train, y_train
+
+            # Store resampled DataFrame
+            plot_df = pd.concat([X_resampled, y_resampled], axis=1)
+            resampled_dfs.append(plot_df)
 
             logging.info(f"Resampling done with {name}")
 
@@ -125,6 +105,7 @@ if __name__ == "__main__":
             accuracy.append(accuracy_score(y_test, y_pred))
             AUC.append(roc_auc_score(y_test, model.predict_proba(X_test)[:, 1]))
 
+        plot_distribution(resampled_dfs, activity_columns, name)
         results[name], accuracys[name], AUCs[name], time_report_all[name] = reports, accuracy, AUC, time_report
 
     create_excel_report(results, accuracys, AUCs, time_report_all, 'report_sepsis')
